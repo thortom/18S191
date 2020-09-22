@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.11.8
+# v0.11.14
 
 using Markdown
 using InteractiveUtils
@@ -81,11 +81,22 @@ This is because the square root must be between the numbers `x/a` and `a`. Why?
 
 # ╔═╡ bccf0e88-e754-11ea-3ab8-0170c2d44628
 ex_1_1 = md"""
-your answer here
+Since for $a = \sqrt(x)$ then $x = a*a$,
+	if $a < \sqrt(x)$ then $a*a < x$
+	and if $a > \sqrt(x)$ then $a*a > x$ and thus $x/a < a$
 """ 
 
 # you might need to wait until all other cells in this notebook have completed running. 
 # scroll down the page to see what's up
+
+# ╔═╡ 3bcd55d4-fb94-11ea-0b40-f713b751ae99
+
+
+# ╔═╡ d46a8aa2-fb92-11ea-10ec-c38dcd0e7b5c
+
+
+# ╔═╡ d16d4240-fb92-11ea-0a7a-596b166de09b
+
 
 # ╔═╡ e7abd366-e7a6-11ea-30d7-1b6194614d0a
 if !(@isdefined ex_1_1)
@@ -99,7 +110,14 @@ Write a function newton_sqrt(x) which implements the above algorithm."
 
 # ╔═╡ 4896bf0c-e754-11ea-19dc-1380bb356ab6
 function newton_sqrt(x, error_margin=0.01, a=x / 2) # a=x/2 is the default value of `a`
-	return x # this is wrong, write your code here!
+	while true
+		a_avg = ((x / a) + a) / 2
+		if (abs(a - a_avg) < error_margin)
+			break
+		end
+		a = a_avg
+	end
+	return a
 end
 
 # ╔═╡ 7a01a508-e78a-11ea-11da-999d38785348
@@ -182,7 +200,7 @@ end
 md"Just like the definition above, our `sierpinksi` function is _recursive_: it calls itself."
 
 # ╔═╡ 02b9c9d6-e752-11ea-0f32-91b7b6481684
-complexity = 3
+complexity = 7
 
 # ╔═╡ 1eb79812-e7b5-11ea-1c10-63b24803dd8a
 if complexity == 3 
@@ -216,7 +234,11 @@ area_sierpinski(1) = 0.??
 
 # ╔═╡ ca8d2f72-e7b6-11ea-1893-f1e6d0a20dc7
 function area_sierpinski(n)
-	return 1.0
+	if n == 0
+		return 1.0
+	else
+		return 3 * area_sierpinski(n - 1) / 4
+	end
 end
 
 # ╔═╡ 71c78614-e7bc-11ea-0959-c7a91a10d481
@@ -316,6 +338,9 @@ has area **$(area_sierpinski(n))**
 # ╟─339c2d5c-e6ce-11ea-32f9-714b3628909c
 # ╟─56866718-e6ce-11ea-0804-d108af4e5653
 # ╠═bccf0e88-e754-11ea-3ab8-0170c2d44628
+# ╠═3bcd55d4-fb94-11ea-0b40-f713b751ae99
+# ╠═d46a8aa2-fb92-11ea-10ec-c38dcd0e7b5c
+# ╠═d16d4240-fb92-11ea-0a7a-596b166de09b
 # ╟─e7abd366-e7a6-11ea-30d7-1b6194614d0a
 # ╟─d62f223c-e754-11ea-2470-e72a605a9d7e
 # ╠═4896bf0c-e754-11ea-19dc-1380bb356ab6
