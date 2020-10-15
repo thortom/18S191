@@ -1511,6 +1511,12 @@ function camera_input(;max_size=200, default_url="https://i.imgur.com/SUmi94P.pn
 """ |> HTML
 end
 
+# ╔═╡ 94c0798e-ee18-11ea-3212-1533753eabb6
+@bind gauss_raw_camera_data camera_input(;max_size=100)
+
+# ╔═╡ 1a0324de-ee19-11ea-1d4d-db37f4136ad3
+@bind sobel_raw_camera_data camera_input(;max_size=100)
+
 # ╔═╡ e15ad330-ee0d-11ea-25b6-1b1b3f3d7888
 
 function process_raw_camera_data(raw_camera_data)
@@ -1545,6 +1551,18 @@ function process_raw_camera_data(raw_camera_data)
 	
 	RGB.(reds, greens, blues)
 end
+
+# ╔═╡ f461f5f2-ee18-11ea-3d03-95f57f9bf09e
+gauss_camera_image = process_raw_camera_data(gauss_raw_camera_data);
+
+# ╔═╡ a75701c4-ee18-11ea-2863-d3042e71a68b
+with_gaussian_blur(gauss_camera_image)
+
+# ╔═╡ 1ff6b5cc-ee19-11ea-2ca8-7f00c204f587
+sobel_camera_image = Gray.(process_raw_camera_data(sobel_raw_camera_data));
+
+# ╔═╡ 1bf94c00-ee19-11ea-0e3c-e12bc68d8e28
+with_sobel_edge_detect(sobel_camera_image)
 
 # ╔═╡ Cell order:
 # ╠═83eb9ca0-ed68-11ea-0bc5-99a09c68f867
