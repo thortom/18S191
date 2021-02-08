@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.11.12
+# v0.12.4
 
 using Markdown
 using InteractiveUtils
@@ -159,7 +159,8 @@ function remove_in_each_row_no_vcat(img, column_numbers)
 	for (i, j) in enumerate(column_numbers)
 		# EDIT THE FOLLOWING LINE and split it into two lines
 		# to avoid using `vcat`.
-		img′[i, :] .= vcat(img[i, 1:j-1], img[i, j+1:end])
+		img′[i, 1:j-1] .= img[i, 1:j-1]
+		img′[i, j:end] .= img[i, j+1:end]
 	end
 	img′
 end
@@ -181,7 +182,7 @@ md"""
 
 # ╔═╡ e49235a4-f367-11ea-3913-f54a4a6b2d6b
 no_vcat_observation = md"""
-<Your answer here>
+The vcat call was creating two (sort of three (two samller and one full size)) new arrays of nearly the same size for each row in the original array.
 """
 
 # ╔═╡ 837c43a4-f368-11ea-00a3-990a45cb0cbd
@@ -203,7 +204,8 @@ function remove_in_each_row_views(img, column_numbers)
 	for (i, j) in enumerate(column_numbers)
 		# EDIT THE FOLLOWING LINE and split it into two lines
 		# to avoid using `vcat`.
-		img′[i, :] .= vcat(img[i, 1:j-1], img[i, j+1:end])
+		img′[i, 1:j-1] .= @view img[i, 1:j-1]
+		img′[i, j:end] .= @view img[i, j+1:end]
 	end
 	img′
 end
@@ -236,9 +238,15 @@ Nice! If you did your optimizations right, you should be able to get down the es
 👉 How many allocations were avoided by adding the `@view` optimization over the `vcat` optimization? Why is this?
 """
 
+# ╔═╡ 07b0b64a-0ed3-11eb-3ba7-d9f323a04238
+size(img)
+
+# ╔═╡ 232728c0-0ed3-11eb-0603-712ae870ab65
+size(img, 1) * 3
+
 # ╔═╡ fd819dac-f368-11ea-33bb-17148387546a
 views_observation = md"""
-<your answer here>
+1026 allocations were avoided by using the @views. This accounts to three allocations for each row in the original image.
 """
 
 # ╔═╡ 318a2256-f369-11ea-23a9-2f74c566549b
@@ -273,6 +281,12 @@ convolve(img, k) = imfilter(img, reflect(k)) # uses ImageFiltering.jl package
 
 # ╔═╡ cdfb3508-f319-11ea-1486-c5c58a0b9177
 float_to_color(x) = RGB(max(0, -x), max(0, x), 0)
+
+# ╔═╡ 91acc928-0ed9-11eb-16a6-3d8b44f5377b
+Gx, Gy = Kernel.sobel()
+
+# ╔═╡ a0daa35c-0ed9-11eb-010d-1b12aa3b56f4
+Gx[1,0]
 
 # ╔═╡ 5fccc7cc-f369-11ea-3b9e-2f0eca7f0f0e
 md"""
@@ -328,11 +342,37 @@ md"""
 # ╔═╡ 2f9cbea8-f3a1-11ea-20c6-01fd1464a592
 random_seam(m, n, i) = reduce((a, b) -> [a..., clamp(last(a) + rand(-1:1), 1, n)], 1:m-1; init=[i])
 
+# ╔═╡ 8abf379a-0f38-11eb-0a72-5bd06c92ba45
+3-1:3+1
+
 # ╔═╡ abf20aa0-f31b-11ea-2548-9bea4fab4c37
 function greedy_seam(energies, starting_pixel::Int)
-	# you can delete the body of this function - it's just a placeholder.
-	random_seam(size(energies)..., starting_pixel)
+	# random_seam(size(energies)..., starting_pixel) # Placeholder
+	n, m = size(energies)
+	j_list = zeros(Int, n)
+	j_current = starting_pixel
+	for i=1:n
+		j_list[i] = j_current
+		if i == n
+			break
+		end
+		next_energies = @view energies[i+1, max(1, j_current-1):min(j_current+1, m)]
+		println(next_energies)
+		j_current = findall(next_energies .== maximum(next_energies))[1] - 2 + j_current
+	end
+	return j_list
 end
+
+# ╔═╡ d271f8c0-0f38-11eb-1957-052163156295
+begin
+	gray_to_float(gray::Gray) = Float64(gray)
+end
+
+# ╔═╡ afb95626-0f37-11eb-11dd-579caa1477a1
+
+
+# ╔═╡ ad7d1730-0f37-11eb-3347-a18914ef958a
+
 
 # ╔═╡ 5430d772-f397-11ea-2ed8-03ee06d02a22
 md"Before we apply your function to our test image, let's try it out on a small matrix of energies (displayed here in grayscale), just like in the lecture snippet above (clicking on the video will take you to the right part of the video). Light pixels have high energy, dark pixels signify low energy."
@@ -346,6 +386,18 @@ md"Before we apply your function to our test image, let's try it out on a small 
 
 # ╔═╡ 7ddee6fc-f394-11ea-31fc-5bd665a65bef
 greedy_test = Gray.(rand(Float64, (8,10)));
+
+# ╔═╡ c8694df4-0f3a-11eb-1ae0-078d8d5f76ac
+size(greedy_test)
+
+# ╔═╡ b98ae7be-0f3a-11eb-273f-63dcae427594
+greedy_seam(greedy_test, 1)
+
+# ╔═╡ 4597898c-0f39-11eb-0b20-b50b5be09a5b
+Float64(maximum(greedy_test))
+
+# ╔═╡ 98a40fb2-0f37-11eb-0a67-7f81be879242
+maximum(gray_to_float.(greedy_test))
 
 # ╔═╡ 6f52c1a2-f395-11ea-0c8a-138a77f03803
 md"Starting pixel: $(@bind greedy_starting_pixel Slider(1:size(greedy_test, 2); show_value=true))"
@@ -640,17 +692,6 @@ if shrink_greedy
 	greedy_carved[greedy_n]
 end
 
-# ╔═╡ d88bc272-f392-11ea-0efd-15e0e2b2cd4e
-if shrink_recursive
-	recursive_carved = shrink_n(pika, 3, recursive_seam)
-	md"Shrink by: $(@bind recursive_n Slider(1:3, show_value=true))"
-end
-
-# ╔═╡ e66ef06a-f392-11ea-30ab-7160e7723a17
-if shrink_recursive
-	recursive_carved[recursive_n]
-end
-
 # ╔═╡ 4e3ef866-f3c5-11ea-3fb0-27d1ca9a9a3f
 if shrink_dict
 	dict_carved = shrink_n(img, 200, recursive_memoized_seam)
@@ -707,6 +748,17 @@ if compute_access
 	tracked = track_access(energy(pika))
 	least_energy(tracked, 1,7)
 	tracked.accesses[]
+end
+
+# ╔═╡ d88bc272-f392-11ea-0efd-15e0e2b2cd4e
+if shrink_recursive
+	recursive_carved = shrink_n(pika, 3, recursive_seam)
+	md"Shrink by: $(@bind recursive_n Slider(1:3, show_value=true))"
+end
+
+# ╔═╡ e66ef06a-f392-11ea-30ab-7160e7723a17
+if shrink_recursive
+	recursive_carved[recursive_n]
 end
 
 # ╔═╡ ffc17f40-f380-11ea-30ee-0fe8563c0eb1
@@ -866,6 +918,8 @@ bigbreak
 # ╟─4f0975d8-f329-11ea-3d10-59a503f8d6b2
 # ╟─dc63d32a-f387-11ea-37e2-6f3666a72e03
 # ╟─7eaa57d2-f368-11ea-1a70-c7c7e54bd0b1
+# ╠═07b0b64a-0ed3-11eb-3ba7-d9f323a04238
+# ╠═232728c0-0ed3-11eb-0603-712ae870ab65
 # ╠═fd819dac-f368-11ea-33bb-17148387546a
 # ╟─d7a9c000-f383-11ea-1516-cf71102d8e94
 # ╟─8d558c4c-f328-11ea-0055-730ead5d5c34
@@ -876,6 +930,8 @@ bigbreak
 # ╟─0b9ead92-f318-11ea-3744-37150d649d43
 # ╠═d184e9cc-f318-11ea-1a1e-994ab1330c1a
 # ╠═cdfb3508-f319-11ea-1486-c5c58a0b9177
+# ╠═91acc928-0ed9-11eb-16a6-3d8b44f5377b
+# ╠═a0daa35c-0ed9-11eb-010d-1b12aa3b56f4
 # ╠═f010933c-f318-11ea-22c5-4d2e64cd9629
 # ╟─5fccc7cc-f369-11ea-3b9e-2f0eca7f0f0e
 # ╠═6f37b34c-f31a-11ea-2909-4f2079bf66ec
@@ -885,17 +941,25 @@ bigbreak
 # ╟─8ba9f5fc-f31b-11ea-00fe-79ecece09c25
 # ╟─f5a74dfc-f388-11ea-2577-b543d31576c6
 # ╟─c3543ea4-f393-11ea-39c8-37747f113b96
-# ╟─2f9cbea8-f3a1-11ea-20c6-01fd1464a592
+# ╠═2f9cbea8-f3a1-11ea-20c6-01fd1464a592
+# ╠═8abf379a-0f38-11eb-0a72-5bd06c92ba45
 # ╠═abf20aa0-f31b-11ea-2548-9bea4fab4c37
+# ╠═c8694df4-0f3a-11eb-1ae0-078d8d5f76ac
+# ╠═b98ae7be-0f3a-11eb-273f-63dcae427594
+# ╠═d271f8c0-0f38-11eb-1957-052163156295
+# ╠═4597898c-0f39-11eb-0b20-b50b5be09a5b
+# ╠═98a40fb2-0f37-11eb-0a67-7f81be879242
+# ╠═afb95626-0f37-11eb-11dd-579caa1477a1
+# ╠═ad7d1730-0f37-11eb-3347-a18914ef958a
 # ╟─5430d772-f397-11ea-2ed8-03ee06d02a22
-# ╟─f580527e-f397-11ea-055f-bb9ea8f12015
-# ╟─6f52c1a2-f395-11ea-0c8a-138a77f03803
-# ╟─2a7e49b8-f395-11ea-0058-013e51baa554
-# ╟─7ddee6fc-f394-11ea-31fc-5bd665a65bef
-# ╟─980b1104-f394-11ea-0948-21002f26ee25
+# ╠═f580527e-f397-11ea-055f-bb9ea8f12015
+# ╠═6f52c1a2-f395-11ea-0c8a-138a77f03803
+# ╠═2a7e49b8-f395-11ea-0058-013e51baa554
+# ╠═7ddee6fc-f394-11ea-31fc-5bd665a65bef
+# ╠═980b1104-f394-11ea-0948-21002f26ee25
 # ╟─9945ae78-f395-11ea-1d78-cf6ad19606c8
-# ╟─87efe4c2-f38d-11ea-39cc-bdfa11298317
-# ╟─f6571d86-f388-11ea-0390-05592acb9195
+# ╠═87efe4c2-f38d-11ea-39cc-bdfa11298317
+# ╠═f6571d86-f388-11ea-0390-05592acb9195
 # ╟─f626b222-f388-11ea-0d94-1736759b5f52
 # ╟─52452d26-f36c-11ea-01a6-313114b4445d
 # ╠═2a98f268-f3b6-11ea-1eea-81c28256a19e
@@ -942,7 +1006,7 @@ bigbreak
 # ╟─0fbe2af6-f381-11ea-2f41-23cd1cf930d9
 # ╟─48089a00-f321-11ea-1479-e74ba71df067
 # ╟─6b4d6584-f3be-11ea-131d-e5bdefcc791b
-# ╟─437ba6ce-f37d-11ea-1010-5f6a6e282f9b
+# ╠═437ba6ce-f37d-11ea-1010-5f6a6e282f9b
 # ╟─ef88c388-f388-11ea-3828-ff4db4d1874e
 # ╟─ef26374a-f388-11ea-0b4e-67314a9a9094
 # ╟─6bdbcf4c-f321-11ea-0288-fb16ff1ec526

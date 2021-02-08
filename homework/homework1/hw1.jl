@@ -916,18 +916,6 @@ end
 # ╔═╡ 8ae59674-ee18-11ea-3815-f50713d0fa08
 md"_Let's make it interactive. 💫_"
 
-# ╔═╡ 94c0798e-ee18-11ea-3212-1533753eabb6
-# @bind gauss_raw_camera_data camera_input(;max_size=100)
-
-# ╔═╡ f461f5f2-ee18-11ea-3d03-95f57f9bf09e
-# gauss_camera_image = process_raw_camera_data(gauss_raw_camera_data);
-
-# ╔═╡ 77b00c9e-09b9-11eb-3761-a5ffc8ba0f96
-gauss_camera_image = philip;
-
-# ╔═╡ 826c661e-09b7-11eb-0ead-3f7cb7449676
-with_gaussian_blur(gauss_camera_image)
-
 # ╔═╡ 7c6642a6-ee15-11ea-0526-a1aac4286cdd
 md"""
 #### Exercise 4.4
@@ -971,6 +959,22 @@ $$G_\text{total} = \sqrt{G_x^2 + G_y^2}.$$
 For simplicity you can choose one of the "channels" (colours) in the image to apply this to.
 """
 
+# ╔═╡ 3befdad8-0eda-11eb-3ad6-3b361384ed22
+begin
+	brightness(c::RGB) = mean((c.r, c.g, c.b))
+	brightness(c::RGBA) = mean((c.r, c.g, c.b))
+end
+
+# ╔═╡ d7084b1e-0ed9-11eb-1ad3-a3e9eb32268d
+begin
+	energy(∇x, ∇y) = sqrt.(∇x.^2 .+ ∇y.^2)
+	function energy(img)
+		∇y = convolve(brightness.(img), Kernel.sobel()[1])
+		∇x = convolve(brightness.(img), Kernel.sobel()[2])
+		energy(∇x, ∇y)
+	end
+end
+
 # ╔═╡ 9eeb876c-ee15-11ea-1794-d3ea79f47b75
 function with_sobel_edge_detect(image)
 	Gx = Float64[1 0 -1
@@ -979,18 +983,16 @@ function with_sobel_edge_detect(image)
 	Gy = Float64[1 2 1
 				 0 0 0
 		         -1 -2 -1]
-	println(Gx)
-	return convolve_image(convolve_image(image, Gx), Gy)
+	y_grad = convolve_image(image, Gy)
+	x_grad = convolve_image(image, Gx)
+	return sqrt.(brightness.(x_grad).^2 .+ brightness.(y_grad).^2)
 end
-
-# ╔═╡ 1a0324de-ee19-11ea-1d4d-db37f4136ad3
-# @bind sobel_raw_camera_data camera_input(;max_size=100)
 
 # ╔═╡ 14dbf282-0a85-11eb-11e3-8743839facd7
 sobel_camera_image = philip;
 
 # ╔═╡ 1bf94c00-ee19-11ea-0e3c-e12bc68d8e28
-with_sobel_edge_detect(sobel_camera_image)
+Gray.(with_sobel_edge_detect(sobel_camera_image))
 
 # ╔═╡ 1b85ee76-ee10-11ea-36d7-978340ef61e6
 md"""
@@ -1552,17 +1554,14 @@ function process_raw_camera_data(raw_camera_data)
 	RGB.(reds, greens, blues)
 end
 
+# ╔═╡ 826c661e-09b7-11eb-0ead-3f7cb7449676
+with_gaussian_blur(gauss_camera_image)
+
 # ╔═╡ f461f5f2-ee18-11ea-3d03-95f57f9bf09e
 gauss_camera_image = process_raw_camera_data(gauss_raw_camera_data);
 
-# ╔═╡ a75701c4-ee18-11ea-2863-d3042e71a68b
-with_gaussian_blur(gauss_camera_image)
-
-# ╔═╡ 1ff6b5cc-ee19-11ea-2ca8-7f00c204f587
-sobel_camera_image = Gray.(process_raw_camera_data(sobel_raw_camera_data));
-
-# ╔═╡ 1bf94c00-ee19-11ea-0e3c-e12bc68d8e28
-with_sobel_edge_detect(sobel_camera_image)
+# ╔═╡ 77b00c9e-09b9-11eb-3761-a5ffc8ba0f96
+gauss_camera_image = philip;
 
 # ╔═╡ Cell order:
 # ╠═83eb9ca0-ed68-11ea-0bc5-99a09c68f867
@@ -1748,6 +1747,8 @@ with_sobel_edge_detect(sobel_camera_image)
 # ╠═77b00c9e-09b9-11eb-3761-a5ffc8ba0f96
 # ╠═826c661e-09b7-11eb-0ead-3f7cb7449676
 # ╟─7c6642a6-ee15-11ea-0526-a1aac4286cdd
+# ╠═3befdad8-0eda-11eb-3ad6-3b361384ed22
+# ╠═d7084b1e-0ed9-11eb-1ad3-a3e9eb32268d
 # ╠═9eeb876c-ee15-11ea-1794-d3ea79f47b75
 # ╠═1a0324de-ee19-11ea-1d4d-db37f4136ad3
 # ╠═14dbf282-0a85-11eb-11e3-8743839facd7
